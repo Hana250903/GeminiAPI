@@ -14,7 +14,9 @@ app.config['SWAGGER'] = {
 swagger = Swagger(app)
 
 # Configure Gemini API
-GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
+#GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 genai.configure(api_key=GEMINI_API_KEY)
 
 @app.route('/generate-seo-keywords', methods=['POST'])
