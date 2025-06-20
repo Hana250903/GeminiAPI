@@ -116,19 +116,6 @@ def seo_advisor():
     """
     )
 
-
-    gemini_response_schema = {
-        "type": "ARRAY",
-        "items": {
-            "type": "OBJECT",
-            "properties": {
-                "keyword_name": {"type": "STRING"},
-                "rank": {"type": "INTEGER"}
-            },
-            "required": ["keyword_name", "rank"]
-        }
-    }
-
     gemini_response = model.generate_content(
         contents=prompt,
         generation_config=genai.types.GenerationConfig(
