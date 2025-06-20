@@ -4,25 +4,22 @@ from pydantic import BaseModel
 from typing import Optional
 import google.generativeai as genai
 
-# External API
-EXTERNAL_API_URL = "https://seoboostaiapi-e2bycxbjc4fmgggz.southeastasia-01.azurewebsites.net/api/RankTrackings"
-
 # Gemini model setup
 model = genai.GenerativeModel('gemini-2.0-flash')
 
 # Pydantic model
-class RankTracking(BaseModel):
+class TopRanking(BaseModel):
     keyword_name: str
     rank: int
+    search_volume: int
 
 # Generate keywords and call external API
-def rank_tracking(input_keyword: str, userID: int):
+def top_ranking():
     prompt = (
-    f"Given the keyword '{input_keyword}', provide its current estimated search engine rank. "
-    "Respond in JSON format as an object with two fields: 'keyword_name' (string) and 'rank' (integer). "
-    "The rank can range from 1 to several thousand. If the keyword is not ranked, set 'rank' to 0."
+    f"Act as an SEO analytics assistant. Without requiring any user input, provide a list of the top 10 trending keywords in the SEO or digital marketing domain."
+    "Respond in JSON format as an object with 3 fields: 'keyword_name' (string), 'rank' (integer) and 'search_volume' (integer)."
+    "Respond only in JSON format, as an array of objects with the three fields above."
     )
-
 
     gemini_response_schema = {
         "type": "ARRAY",
@@ -30,9 +27,10 @@ def rank_tracking(input_keyword: str, userID: int):
             "type": "OBJECT",
             "properties": {
                 "keyword_name": {"type": "STRING"},
-                "rank": {"type": "INTEGER"}
+                "rank": {"type": "INTEGER"},
+                "search_volume": {"type": "INTEGER"}
             },
-            "required": ["keyword_name", "rank"]
+            "required": ["keyword_name", "rank", "search_volume"]
         }
     }
 
@@ -45,40 +43,10 @@ def rank_tracking(input_keyword: str, userID: int):
     )
 
     raw_keywords_data = json.loads(gemini_response.text)
-    my_keywords: list[RankTracking] = [RankTracking(**item) for item in raw_keywords_data]
-
-    external_api_results = []
-
-    for keyword in my_keywords:
-        payload = {
-            "userId": userID,
-            "keyword": input_keyword,
-            "rank": keyword.rank,
-        }
-
-        try:
-            api_response = requests.post(EXTERNAL_API_URL, json=payload)    
-            if api_response.ok:
-                status = "success"
-                message = f"Status Code: {api_response.status_code}"
-            else:
-                status = "failure"
-                message = f"Status Code: {api_response.status_code}, Error: {api_response.text}"
-        except requests.exceptions.RequestException as req_err:
-            status = "failure"
-            message = f"Network/Connection Error: {req_err}"
-        except Exception as api_exc:
-            status = "failure"
-            message = f"Unexpected Error: {api_exc}"
-
-        external_api_results.append({
-            "keyword": keyword.keyword_name,
-            "status": status,
-            "message": message
-        })
+    my_keywords: list[TopRanking] = [TopRanking(**item) for item in raw_keywords_data]
 
     return {
         "message": "Keywords generated and sent successfully.",
         "generated_keywords_count": len(my_keywords),
-        "external_api_status": external_api_results
+        "items": raw_keywords_data
     }

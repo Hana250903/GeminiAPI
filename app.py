@@ -3,6 +3,8 @@ from flasgger import Swagger
 import google.generativeai as genai
 from keyword_utils import generate_and_send_keywords  # <--- import function bạn vừa tách
 from rank_tracking import rank_tracking  # <--- import function bạn vừa tách
+from top_ranking import top_ranking  # <--- import function bạn vừa tách
+from seo_advisor import seo_advisor
 import os
 
 app = Flask(__name__)
@@ -14,8 +16,8 @@ app.config['SWAGGER'] = {
 swagger = Swagger(app)
 
 # Configure Gemini API
-#GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
+#GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 genai.configure(api_key=GEMINI_API_KEY)
 
@@ -94,7 +96,46 @@ def generate_rank_tracking():
 
     except Exception as e:
         return jsonify({"error": f"API Error: {str(e)}"}), 500
+    
+@app.route('/top-ranking', methods=['POST'])
+def generate_top_ranking():
+    """
+    Generates Rank Tracking and sends them to external API.
+    ---
+    responses:
+      200:
+        description: Keywords generated and sent successfully.
+      400:
+        description: Invalid input.
+      500:
+        description: Internal server error.
+    """
+    try:
+        result = top_ranking()  # Assuming this function does not require any input parameters
+        return jsonify(result), 200
 
+    except Exception as e:
+        return jsonify({"error": f"API Error: {str(e)}"}), 500
+    
+@app.route('/seo-advisor', methods=['POST'])
+def generate_seo_advisor():
+    """
+    Generates Rank Tracking and sends them to external API.
+    ---
+    responses:
+      200:
+        description: Keywords generated and sent successfully.
+      400:
+        description: Invalid input.
+      500:
+        description: Internal server error.
+    """
+    try:
+        result = seo_advisor()  # Assuming this function does not require any input parameters
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": f"API Error: {str(e)}"}), 500
 
 def main():
     app.run(debug=True, port=5001)
