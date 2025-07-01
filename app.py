@@ -1,10 +1,13 @@
+from dataclasses import asdict
+import sys
 from flask import Flask, request, jsonify
 from flasgger import Swagger
 import google.generativeai as genai
+from deserialize import deserialize_to_dataclass
 from keyword_utils import generate_and_send_keywords
 from rank_tracking import rank_tracking, update_rank_tracking, RankTrackingRequest
 from top_ranking import top_ranking
-from seo_advisor import seo_advisor
+from seo_advisor import seo_advisor, AuditRequestModel
 from content_optimization import optimize_content as optimize_content_func
 from content_optimization import ContentOptimizationRequest
 import os
@@ -23,7 +26,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-
+# BE
 @app.route('/generate-seo-keywords', methods=['POST'])
 def generate_seo_keywords():
     """
@@ -60,7 +63,7 @@ def generate_seo_keywords():
     except Exception as e:
         return jsonify({"error": f"API Error: {str(e)}"}), 500
 
-
+# BE
 @app.route('/rank-tracking', methods=['POST'])
 def generate_rank_tracking():
     """
@@ -123,28 +126,129 @@ def generate_top_ranking():
     except Exception as e:
         return jsonify({"error": f"API Error: {str(e)}"}), 500
 
-
+# BE
 @app.route('/seo-advisor', methods=['POST'])
 def generate_seo_advisor():
     """
-    Generates Rank Tracking and sends them to external API.
+    Generates seo advisor and sends them to external API.
     ---
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            user_id:
+              type: integer
+              example: 1
+            url:
+              type: string
+              example: "https://example.com"
+            overall_score:
+              type: integer
+              example: 85
+            critical_issue:
+              type: integer
+              example: 2
+            warning:
+              type: integer
+              example: 1
+            opportunity:
+              type: integer
+              example: 3
+            passed_check:
+              type: string
+              example: "All checks passed"
+            failed_elements:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  url:
+                    type: string
+                    example: "https://example.com/page"
+                  element:
+                    type: string
+                    example: "title"
+                  current_value:
+                    type: string
+                    example: "Example Title"
+                  status:
+                    type: string
+                    example: "not pass"
+                  important:
+                    type: integer
+                    example: 1
+                  description:
+                    type: string
+                    example: "Title is too short"
+                  audit_repost_id:
+                    type: integer
+                    example: 1
+                    nullable: true # Thêm nullable: true để chỉ rõ trường này có thể là null (OpenAPI 3.0+)
+                required:
+                  - id
+                  - url
+                  - element
+                  - current_value
+                  - status
+                  - important
+                  - description
+          required:
+            - id
+            - user_id
+            - url
+            - overall_score
+            - critical_issue
+            - warning
+            - opportunity
+            - passed_check
+            - failed_elements
     responses:
       200:
-        description: Keywords generated and sent successfully.
+        description: SEO Advisor response generated successfully.
       400:
-        description: Invalid input.
+        description: Invalid input. (e.g., request body doesn't conform to schema, missing required fields)
       500:
-        description: Internal server error.
+        description: Internal server error. (e.g., API call to Gemini failed, unexpected error during processing)
     """
     try:
-        result = seo_advisor()  # Assuming this function does not require any input parameters
-        return jsonify(result), 200
+        data = request.get_json(silent=True)
+
+        if data is None:
+            return jsonify({
+                "error": "Missing or invalid JSON in request body.",
+                "details": "Ensure 'Content-Type: application/json' header is set and the body is valid JSON."
+            }), 400
+        
+        # --- SỬ DỤNG deserialize_to_dataclass Ở ĐÂY ---
+        try:
+            request_data = deserialize_to_dataclass(AuditRequestModel, data)
+
+        except (TypeError, KeyError, ValueError) as e:
+            return jsonify({
+                "error": "Invalid input data format or missing required fields for AuditRequest.",
+                "details": str(e)
+            }), 400
+        
+        seo_response_entity = seo_advisor(request_data)
+
+        return jsonify(asdict(seo_response_entity)), 200
 
     except Exception as e:
-        return jsonify({"error": f"API Error: {str(e)}"}), 500
+        print(f"An unhandled internal server error occurred: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred."}), 500
 
-
+# BE
 @app.route('/update-rank-tracking', methods=['POST'])
 def update_rank_tracking_with_id():
     """
@@ -200,7 +304,7 @@ def update_rank_tracking_with_id():
     except Exception as e:
         return jsonify({"error": f"API Error: {str(e)}"}), 500
 
-
+# BE
 @app.route('/optimize-content', methods=['POST'])
 def optimize_content():
     """
@@ -269,12 +373,13 @@ def optimize_content():
             # (Nhưng cần đảm bảo tất cả các trường trong data đều có và đúng kiểu,
             # nếu không sẽ gây TypeError/ValidationError)
 
-        except Exception as e: # Bắt lỗi khi tạo ContentOptimizationRequest
+        except Exception as e:  # Bắt lỗi khi tạo ContentOptimizationRequest
             return jsonify({"error": f"Invalid input data for ContentOptimizationRequest: {str(e)}"}), 400
 
         # Gọi hàm xử lý chính (tôi giả định hàm của bạn tên là optimize_content_func
         # để tránh trùng tên với endpoint Flask)
-        result = optimize_content_func(request_data) # <--- Đổi tên hàm thành optimize_content_func
+        # <--- Đổi tên hàm thành optimize_content_func
+        result = optimize_content_func(request_data)
 
         return jsonify(result), 200
 
