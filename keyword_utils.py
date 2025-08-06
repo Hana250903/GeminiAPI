@@ -7,8 +7,11 @@ import google.generativeai as genai
 # External API
 EXTERNAL_API_URL = "https://seoboostaiapi-e2bycxbjc4fmgggz.southeastasia-01.azurewebsites.net/api/Keywords"
 
+# Localhost API
+# EXTERNAL_API_URL = "https://localhost:7144/api/Keywords"
+
 # Gemini model setup
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # Pydantic model
 class Keyword(BaseModel):
@@ -62,10 +65,9 @@ def generate_and_send_keywords(input_keyword: str):
 
     for keyword in my_keywords:
         payload = {
-            "userId": 2,
             "searchKeyword": input_keyword,
             "keyword1": keyword.keyword_name,
-            "keyword": keyword.keyword_name,
+            "model": "gemini-2.5-flash",
             "searchVolume": keyword.searchVolume,
             "difficulty": keyword.difficulty if keyword.difficulty is not None else 0,
             "cpc": keyword.cpc if keyword.cpc is not None else 0.0,

@@ -5,7 +5,7 @@ from flasgger import Swagger
 import google.generativeai as genai
 from deserialize import deserialize_to_dataclass
 from keyword_utils import generate_and_send_keywords
-from rank_tracking import rank_tracking, update_rank_tracking, RankTrackingRequest
+from rank_tracking import rank_tracking, update_rank_tracking, RankTrackingRequest, UpdateRankTrackingRequest
 from top_ranking import top_ranking
 from seo_advisor import seo_advisor, AuditRequestModel
 from content_optimization import optimize_content as optimize_content_func
@@ -269,6 +269,9 @@ def update_rank_tracking_with_id():
               id:
                 type: string
                 example: "5"
+              old_rank:
+                type: integer
+                example: 10
     responses:
       200:
         description: Rank trackings updated successfully.
@@ -284,10 +287,10 @@ def update_rank_tracking_with_id():
             return jsonify({"error": "Expected a list of rank tracking requests."}), 400
 
         request_data = [
-            RankTrackingRequest(input_keyword=item.get(
-                "input_keyword"), id=item.get("id"))
+            UpdateRankTrackingRequest(input_keyword=item.get(
+                "input_keyword"), id=item.get("id"), old_rank=item.get("old_rank"))
             for item in data
-            if item.get("input_keyword") and item.get("id") is not None
+            if item.get("input_keyword") and item.get("id") and item.get("old_rank") is not None
         ]
 
         if not request_data:

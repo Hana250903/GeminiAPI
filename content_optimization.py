@@ -4,6 +4,7 @@ import requests
 from pydantic import BaseModel
 from typing import Optional
 import google.generativeai as genai
+from datetime import datetime, timezone
 
 
 # External API
@@ -13,7 +14,7 @@ EXTERNAL_API_URL = "https://seoboostaiapi-e2bycxbjc4fmgggz.southeastasia-01.azur
 # EXTERNAL_API_URL = "https://localhost:7144/api/ContentOptimizations"
 
 # Gemini model setup
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 
 @dataclass
@@ -100,10 +101,14 @@ def optimize_content(request: ContentOptimizationRequest):
 
     external_api_results = []
 
+    utc_now = datetime.now(timezone.utc)
+    formatted = utc_now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
     # Payload cho API ngoài
     payload = {
         "id": request.id,
         "userId": request.user_id,
+        "model": "gemini-2.5-flash",
         "keyword": request.keyword,
         "originalContent": request.content,
         "contentLenght": request.content_length,
@@ -114,7 +119,8 @@ def optimize_content(request: ContentOptimizationRequest):
         "seoscore": my_optimized_content.seo_score,
         "readability": my_optimized_content.readability,
         "engagement": my_optimized_content.engagement,
-        "originality": my_optimized_content.originality
+        "originality": my_optimized_content.originality,
+        "createdAt": formatted
     }
 
     try:
