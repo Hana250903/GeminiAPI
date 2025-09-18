@@ -23,8 +23,8 @@ app.config['SWAGGER'] = {
 swagger = Swagger(app)
 
 # Configure Gemini API
-GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
-# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Internal API key for Flask
 # FLASK_INTERNAL_API_KEY = "super-secret-ai-key"
