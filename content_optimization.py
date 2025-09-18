@@ -5,13 +5,17 @@ from pydantic import BaseModel
 from typing import Optional
 import google.generativeai as genai
 from datetime import datetime, timezone
+import urllib3
 
+# urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # External API
-EXTERNAL_API_URL = "https://seoboostaiapi-e2bycxbjc4fmgggz.southeastasia-01.azurewebsites.net/api/ContentOptimizations"
+# EXTERNAL_API_URL = "https://seoboostaiapi-e2bycxbjc4fmgggz.southeastasia-01.azurewebsites.net/api/ContentOptimizations"
+
+# headers = {"X-API-KEY": "super-secret-ai-key"}
 
 # Localhost API
-# EXTERNAL_API_URL = "https://localhost:7144/api/ContentOptimizations"
+EXTERNAL_API_URL = "https://localhost:7144/api/ContentOptimizations"
 
 # Gemini model setup
 model = genai.GenerativeModel('gemini-2.5-flash')

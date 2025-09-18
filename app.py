@@ -1,7 +1,7 @@
 from dataclasses import asdict
 import sys
 from flask import Flask, request, jsonify
-from flasgger import Swagger
+from flasgger import Swagger, swag_from
 import google.generativeai as genai
 from deserialize import deserialize_to_dataclass
 from keyword_utils import generate_and_send_keywords
@@ -10,6 +10,8 @@ from top_ranking import top_ranking
 from seo_advisor import seo_advisor, AuditRequestModel
 from content_optimization import optimize_content as optimize_content_func
 from content_optimization import ContentOptimizationRequest
+from functools import wraps
+from chat_box import ask_gemini as gemini_service
 import os
 
 app = Flask(__name__)
@@ -21,10 +23,23 @@ app.config['SWAGGER'] = {
 swagger = Swagger(app)
 
 # Configure Gemini API
-# GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = "AIzaSyAFCZLK0Vr0mDLPcOFyDy8H7SWAl2vSb1A"
+# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Internal API key for Flask
+# FLASK_INTERNAL_API_KEY = "super-secret-ai-key"
+# FLASK_INTERNAL_API_KEY = os.getenv("FLASK_INTERNAL_API_KEY")
 
 genai.configure(api_key=GEMINI_API_KEY)
+
+# def require_internal_api_key(f):
+#     @wraps(f)
+#     def decorated(*args, **kwargs):
+#         auth_header = request.headers.get("X-API-KEY")
+#         if not auth_header or auth_header != FLASK_INTERNAL_API_KEY:
+#             return jsonify({"error": "Unauthorized"}), 401
+#         return f(*args, **kwargs)
+#     return decorated
 
 # BE
 @app.route('/generate-seo-keywords', methods=['POST'])
@@ -309,6 +324,7 @@ def update_rank_tracking_with_id():
 
 # BE
 @app.route('/optimize-content', methods=['POST'])
+# @require_internal_api_key
 def optimize_content():
     """
     Optimize content and sends them to external API.
@@ -391,10 +407,61 @@ def optimize_content():
         print(f"Error in /optimize-content: {str(e)}")
         return jsonify({"error": f"API Error: {str(e)}"}), 500
 
+# --- Gemini Chat Endpoint ---
+@app.route('/ask_gemini', methods=['POST'])
+@swag_from({
+    'tags': ['Gemini AI Chat'],
+    'parameters': [
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'question': {
+                        'type': 'string',
+                        'example': 'Sứ mệnh của giai cấp công nhân thể hiện ở những khía cạnh nào?'
+                    }
+                },
+                'required': ['question']
+            }
+        }
+    ],
+    'consumes': ['application/json'],
+    'produces': ['application/json'],
+    'responses': {
+        200: {
+            'description': 'Phản hồi từ AI',
+            'examples': {
+                'application/json': {
+                    'answer': 'Chào bạn! Tôi có thể giúp gì?'
+                }
+            }
+        },
+        400: {
+            'description': 'Thiếu dữ liệu question'
+        },
+        500: {
+            'description': 'Lỗi nội bộ server'
+        }
+    }
+})
+def ask_gemini():
+    data = request.get_json(silent=True)
+    if not data or 'question' not in data:
+        return jsonify({"error": "Vui lòng cung cấp 'question' trong request body."}), 400
+
+    user_question = data.get('question')
+
+    try:
+        response = gemini_service(user_question)
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 def main():
     app.run(debug=True, port=5001)
-
 
 if __name__ == "__main__":
     main()
