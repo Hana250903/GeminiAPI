@@ -12,6 +12,7 @@ from content_optimization import optimize_content as optimize_content_func
 from content_optimization import ContentOptimizationRequest
 from functools import wraps
 from chat_box import ask_gemini as gemini_service
+from chat_box_hcm import ask_gemini as gemini_service_hcm
 import os
 
 app = Flask(__name__)
@@ -456,6 +457,58 @@ def ask_gemini():
 
     try:
         response = gemini_service(user_question)
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/ask_gemini_hcm', methods=['POST'])
+@swag_from({
+    'tags': ['Gemini AI Chat HCM'],
+    'parameters': [
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'question': {
+                        'type': 'string',
+                        'example': ''
+                    }
+                },
+                'required': ['question']
+            }
+        }
+    ],
+    'consumes': ['application/json'],
+    'produces': ['application/json'],
+    'responses': {
+        200: {
+            'description': 'Phản hồi từ AI',
+            'examples': {
+                'application/json': {
+                    'answer': 'Chào bạn! Tôi có thể giúp gì?'
+                }
+            }
+        },
+        400: {
+            'description': 'Thiếu dữ liệu question'
+        },
+        500: {
+            'description': 'Lỗi nội bộ server'
+        }
+    }
+})
+def ask_gemini_hcm():
+    data = request.get_json(silent=True)
+    if not data or 'question' not in data:
+        return jsonify({"error": "Vui lòng cung cấp 'question' trong request body."}), 400
+
+    user_question = data.get('question')
+
+    try:
+        response = gemini_service_hcm(user_question)
         return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
